@@ -421,8 +421,6 @@
           <h2>Manager Notes</h2>
           <textarea id="managerNotes" placeholder="Add opening notes, dough issues, prep shortages or shift-specific comments..."></textarea>
           <div class="actions">
-            <button class="secondary" id="saveLocal">Save Offline</button>
-            <button class="secondary" id="loadLocal">Load Saved Plan</button>
             <button id="printPlan">Print / Save PDF</button>
           </div>
         </div>
@@ -883,20 +881,6 @@
       w.focus();
       w.print();
       w.close();
-    });
-
-    document.getElementById('saveLocal').addEventListener('click', ()=>{
-      localStorage.setItem('doughPrepPlanner', JSON.stringify(collectAllData()));
-      alert('Plan saved on this device.');
-    });
-
-    document.getElementById('loadLocal').addEventListener('click', ()=>{
-      const saved=localStorage.getItem('doughPrepPlanner');
-      if(!saved){
-        alert('No saved plan found on this device.');
-        return;
-      }
-      applySavedData(JSON.parse(saved));
     });
 
     setToday();
