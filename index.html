@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Dough & Prep Planner</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --card: #ffffff;
+      --text: #17324d;
+      --muted: #5e7388;
+      --blue: #006491;
+      --blue2: #0f7aae;
+      --red: #e31837;
+      --line: #d7e1ea;
+      --good: #dff5e6;
+      --warn: #fff1d6;
+      --bad: #fde1e4;
+      --soft: #eef5fb;
+      --morning: #d9eef4;
+      --rush: #f4dddd;
+      --late: #e7def4;
+    }
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+    .wrap { max-width: 1500px; margin: 0 auto; padding: 24px; }
+    .header {
+      background: linear-gradient(135deg, var(--blue), var(--blue2));
+      color: white;
+      padding: 24px;
+      border-radius: 20px;
+      box-shadow: 0 12px 28px rgba(0,0,0,.12);
+      margin-bottom: 20px;
+    }
+    .header h1 { margin: 0 0 8px 0; font-size: 30px; }
+    .header p { margin: 0; opacity: .95; font-size: 15px; }
+    .stack { display: grid; gap: 20px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 8px 20px rgba(0,0,0,.06);
+    }
+    h2 { margin: 0 0 14px 0; font-size: 20px; color: var(--blue); }
+    h3 { margin: 0 0 10px 0; font-size: 16px; }
+    label {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 6px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    input, button, textarea, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 12px;
+      font-size: 16px;
+      background: white;
+      min-height: 46px;
+    }
+    input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      min-height: 18px;
+    }
+    input[type="number"] {
+      appearance: textfield;
+      -moz-appearance: textfield;
+    }
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    textarea { min-height: 110px; resize: vertical; }
+    button { background: var(--red); color: white; font-weight: 700; border: none; cursor: pointer; }
+    button.secondary { background: var(--blue); }
+    .top-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
+    .forecast-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 12px; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .summary-box { border: 1px solid var(--line); border-radius: 14px; padding: 14px; background: #fbfdff; }
+    .summary-box .big { font-size: 26px; font-weight: 800; margin-top: 6px; color: var(--blue); }
+    .small { font-size: 12px; color: var(--muted); }
+    .note { background: #eef7ff; border-left: 4px solid var(--blue); padding: 12px; border-radius: 10px; font-size: 14px; color: var(--text); }
+    .actions { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+    .table-wrap {
+      overflow-x: auto;
+      overflow-y: auto;
+      max-height: 700px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      -webkit-overflow-scrolling: touch;
+      touch-action: pan-x pan-y;
+      position: relative;
+      background: white;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { padding: 8px; border: 1px solid #e7edf3; text-align: center; vertical-align: middle; }
+    th {
+      background: var(--soft);
+      color: var(--blue);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    td:first-child, th:first-child { text-align: left; }
+    .pill { display: inline-block; padding: 6px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+    .good { background: var(--good); }
+    .warn { background: var(--warn); }
+    .bad { background: var(--bad); }
+    .task-list { display: grid; gap: 8px; }
+    .task-row { display: grid; grid-template-columns: 24px 1fr; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: #fbfdff; }
+    .task-row.done { background: var(--good); }
+    .section-chip { display: inline-block; padding: 6px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: var(--soft); color: var(--blue); margin-bottom: 10px; }
+    .morning { background: var(--morning); }
+    .rush { background: var(--rush); }
+    .late { background: var(--late); }
+    .mini { font-size: 12px; color: var(--muted); }
+    .mix { color: var(--red); font-weight: 700; }
+    .print-section { page-break-inside: avoid; break-inside: avoid; }
+    .mobile-hint {
+      display: none;
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .opening-dough-input {
+      min-width: 76px;
+      text-align: center;
+      padding: 12px 8px;
+      font-size: 16px;
+      border-radius: 10px;
+      position: relative;
+      z-index: 2;
+      touch-action: manipulation;
+    }
+    .opening-dough-table {
+      min-width: 760px;
+      table-layout: fixed;
+    }
+    .opening-dough-table th,
+    .opening-dough-table td {
+      min-width: 84px;
+    }
+    @media (max-width: 1180px) {
+      .top-grid { grid-template-columns: repeat(2, 1fr); }
+      .forecast-grid, .two-col, .bottom-grid, .summary-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 768px) {
+      .wrap { padding: 12px; }
+      .card { padding: 14px; border-radius: 14px; }
+      .header { padding: 18px; border-radius: 16px; }
+      .header h1 { font-size: 24px; }
+      h2 { font-size: 18px; }
+      .top-grid,
+      .forecast-grid,
+      .two-col,
+      .bottom-grid,
+      .summary-grid {
+        grid-template-columns: 1fr;
+      }
+      .actions {
+        flex-direction: column;
+      }
+      .summary-box .big {
+        font-size: 22px;
+      }
+      th {
+        position: static;
+      }
+      .mobile-hint {
+        display: block;
+      }
+      .opening-dough-input {
+        min-width: 68px;
+        font-size: 16px;
+      }
+    }
+    @media print {
+      .table-wrap {
+        overflow: visible !important;
+        max-height: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <h1>Dough & Prep Planner</h1>
+      <p>Enter sales forecasts and opening dough by size and age. Then build the prep plan and dough plan in one click.</p>
+    </div>
+
+    <div class="stack">
+      <div class="card">
+        <h2>Daily Inputs</h2>
+        <div class="top-grid">
+          <div><label>Store</label><input id="store" value="Downpatrick" /></div>
+          <div><label>Date</label><input id="shiftDate" type="date" /></div>
+          <div><label>Open Time</label><input id="openTime" type="time" value="11:00" /></div>
+          <div><label>Rush Start</label><input id="rushStart" type="time" value="15:00" /></div>
+          <div><label>Late Start</label><input id="lateStart" type="time" value="20:00" /></div>
+          <div><label>Close Time</label><input id="closeTime" type="time" value="23:00" /></div>
+        </div>
+
+        <div class="forecast-grid">
+          <div><label>Today's Forecast Sales (£)</label><input id="forecastSales" type="number" min="0" step="50" value="2450" /></div>
+          <div><label>Tomorrow Forecast Sales (£)</label><input id="forecastSalesDay2" type="number" min="0" step="50" value="2450" /></div>
+          <div><label>Day After Forecast Sales (£)</label><input id="forecastSalesDay3" type="number" min="0" step="50" value="2450" /></div>
+        </div>
+
+        <div style="margin-top:18px;">
+          <h3>Opening Dough by Size & Age</h3>
+          <div class="mobile-hint">On phone, swipe sideways to see all dough days.</div>
+          <div class="table-wrap">
+            <table id="openingDoughTable" class="opening-dough-table">
+              <thead>
+                <tr>
+                  <th>Size</th>
+                  <th>Day 1</th>
+                  <th>Day 2</th>
+                  <th>Day 3</th>
+                  <th>Day 4</th>
+                  <th>Day 5</th>
+                  <th>Day 6</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="actions"><button id="buildAll">Build Prep & Dough Plan</button></div>
+        <div class="note" style="margin-top:12px;">Proofing is fixed in the background: Day 1 = 5 hrs, Day 2 = 4 hrs, Day 3 = 2 hrs, Day 4 = 30 mins, Day 5 = 15 mins, Day 6 = 10 mins.</div>
+      </div>
+
+      <div class="card print-section" id="printDoughSummarySection">
+        <h2>Dough Summary</h2>
+        <div class="summary-grid">
+          <div class="summary-box"><div class="small">13.5 Available</div><div class="big" id="sum13_5">0</div></div>
+          <div class="summary-box"><div class="small">11.5 Available</div><div class="big" id="sum11_5">0</div></div>
+          <div class="summary-box"><div class="small">9.5 Available</div><div class="big" id="sum9_5">0</div></div>
+          <div class="summary-box"><div class="small">6 Available</div><div class="big" id="sum6">0</div></div>
+        </div>
+        <div id="statusPill"></div>
+      </div>
+
+      <div class="card print-section" id="printDoughNeededSection">
+        <span class="section-chip">Dough Requirement</span>
+        <h2>Dough Needed for Today</h2>
+        <div class="table-wrap print-full">
+          <table>
+            <thead>
+              <tr><th>Dough Size</th><th>Required</th><th>Opening</th><th>Gap / Surplus</th></tr>
+            </thead>
+            <tbody id="doughSummaryBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card print-section" id="printDoughPlanSection">
+        <span class="section-chip">Automatic Takeout Plan</span>
+        <h2>Period Dough Plan</h2>
+        <div class="note">The plan shows Morning, Rush and Late only. It still uses the KPI sales split underneath, rounds trays to the nearest 0.5, and flags very small periods as mix tray periods.</div>
+        <div class="table-wrap print-full" style="margin-top:12px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Period</th>
+                <th>Window</th>
+                <th>Row</th>
+                <th>6</th>
+                <th>9.5</th>
+                <th>11.5</th>
+                <th>13.5</th>
+              </tr>
+            </thead>
+            <tbody id="doughPlanBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div class="card print-section" id="printPrepSection">
+          <span class="section-chip">Prep Plan</span>
+          <h2>Required Prep for Today</h2>
+          <div class="table-wrap print-full" id="prepWrap">
+            <table>
+              <thead>
+                <tr><th>Item</th><th>Prep Unit</th><th>Required</th><th>Complete?</th></tr>
+              </thead>
+              <tbody id="prepBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card print-section" id="printChecklistSection">
+          <h2>Opening Manager Checklist</h2>
+          <div class="task-list" id="taskList"></div>
+        </div>
+      </div>
+
+      <div class="bottom-grid">
+        <div class="card">
+          <h2>Manager Notes</h2>
+          <textarea id="managerNotes" placeholder="Add opening notes, dough issues, prep shortages or shift-specific comments..."></textarea>
+          <div class="actions">
+            <button class="secondary" id="saveLocal">Save Offline</button>
+            <button class="secondary" id="loadLocal">Load Saved Plan</button>
+            <button id="printPlan">Print / Save PDF</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const BENCHMARK_SALES = 24000;
+    const AGES = [1,2,3,4,5,6];
+    const SIZES = ['13.5','11.5','9.5','6'];
+    const PROOF_MINUTES = {1:300,2:240,3:120,4:30,5:15,6:10};
+    const SALES_SPLIT = { morning:0.10, rush:0.70, late:0.20, lunch:0.06, afternoon:0.04, earlyRush:0.21, dinnerRush:0.49, postRush:0.13, lateNight:0.07 };
+    const SUBPERIODS = [
+      { key:'lunch', title:'Lunch', window:'10am - 1pm', ratio:SALES_SPLIT.lunch, parent:'Morning' },
+      { key:'afternoon', title:'Afternoon', window:'1pm - 3pm', ratio:SALES_SPLIT.afternoon, parent:'Morning' },
+      { key:'earlyRush', title:'Early Rush', window:'3pm - 5pm', ratio:SALES_SPLIT.earlyRush, parent:'Rush' },
+      { key:'dinnerRush', title:'Dinner Rush', window:'5pm - 8pm', ratio:SALES_SPLIT.dinnerRush, parent:'Rush' },
+      { key:'postRush', title:'Post Rush', window:'8pm - 10pm', ratio:SALES_SPLIT.postRush, parent:'Late' },
+      { key:'lateNight', title:'Late Night', window:'10pm - Close', ratio:SALES_SPLIT.lateNight, parent:'Late' }
+    ];
+
+    const prepItems = [
+      { item:'Box 6"', unit:'Pack', benchmark:6.98 },{ item:'Box 7"', unit:'Pack', benchmark:3.06 },{ item:'Box 9.5"', unit:'Pack', benchmark:5.00 },{ item:'Box 11.5"', unit:'Pack', benchmark:8.19 },{ item:'Box 13.5"', unit:'Pack', benchmark:11.92 },{ item:'Box Single Dip', unit:'Pack', benchmark:3.12 },{ item:'Box Combo', unit:'Pack', benchmark:0.80 },{ item:'Silicon Paper', unit:'Ream', benchmark:0 },{ item:'6" Dough', unit:'Tray', benchmark:42.93 },{ item:'9" Dough', unit:'Tray', benchmark:17.00 },{ item:'11" Dough', unit:'Tray', benchmark:58.60 },{ item:'13" Dough', unit:'Tray', benchmark:97.88 },{ item:'11.5" Plant-based Dough', unit:'Tray', benchmark:4.80 },{ item:'11" Shells', unit:'Each (shell)', benchmark:38.00 },{ item:'13" Shells', unit:'Each (shell)', benchmark:38.00 },{ item:'Gluten Free Base', unit:'Each (base)', benchmark:26.00 },{ item:'Pizza Sauce', unit:'Pouch', benchmark:67.69 },{ item:'BQ Sauce', unit:'Pouch', benchmark:10.93 },{ item:'Zs Sauce', unit:'Pouch', benchmark:12.52 },{ item:'Garlic Butter', unit:'Pouch', benchmark:3.73 },{ item:'Cheese', unit:'Bag', benchmark:160.92 },{ item:'Delight Cheese', unit:'Bag', benchmark:10.96 },{ item:'String Cheese', unit:'Bag', benchmark:8.98 },{ item:'Pepperoni', unit:'Bag', benchmark:41.28 },{ item:'Ham', unit:'Bag', benchmark:11.45 },{ item:'Sausage', unit:'Bag', benchmark:7.65 },{ item:'Meatballs', unit:'Bag', benchmark:4.04 },{ item:'Onions', unit:'Bag', benchmark:8.49 },{ item:'Green/Red Peppers', unit:'Bag', benchmark:8.95 },{ item:'Mushrooms', unit:'Bag', benchmark:6.12 },{ item:'Tomatoes', unit:'Bag', benchmark:4.84 },{ item:'Beef', unit:'Bag', benchmark:8.96 },{ item:'Bacon', unit:'Bag', benchmark:8.54 },{ item:'Roast Chicken', unit:'Bag', benchmark:11.62 },{ item:'Tandoori Chicken', unit:'Bag', benchmark:3.50 },{ item:'Turkey', unit:'Bag', benchmark:5.71 },{ item:'Sweetcorn', unit:'Bag', benchmark:2.66 },{ item:'Pineapple', unit:'Bag', benchmark:1.95 },{ item:'Jalapenos', unit:'Bag', benchmark:1.70 },{ item:'Gherkins', unit:'Bag', benchmark:1.75 },{ item:'Chorizo', unit:'Bag', benchmark:6.10 },{ item:'Wedges', unit:'Bag', benchmark:11.18 },{ item:'Fries', unit:'Bag', benchmark:9.97 },{ item:'Strippers', unit:'Bag', benchmark:6.63 },{ item:'Kickers', unit:'Bag', benchmark:5.72 },{ item:'Wings', unit:'Bag', benchmark:5.74 },{ item:'Cookies', unit:'Tray', benchmark:5.85 },{ item:'Tortilla Wraps', unit:'Pack', benchmark:3.07 },{ item:'Nachos', unit:'Bag', benchmark:2.17 },{ item:'Plant-Based Cheese', unit:'Bag', benchmark:3.73 },{ item:'Plant-Based Pepperoni', unit:'Bag', benchmark:2.75 },{ item:'Plant-Based Nuggets', unit:'Bag', benchmark:2.19 },{ item:'Plant-Based Dip', unit:'Tub', benchmark:1.35 },{ item:'Franks Hot Sauce', unit:'Bottle', benchmark:1.55 },{ item:'Cheese Sauce', unit:'Bottle', benchmark:3.36 },{ item:'Burger Sauce', unit:'Bottle', benchmark:1.88 },{ item:'Sriracha Drizzle', unit:'Bottle', benchmark:1.25 },{ item:'Cranberry Drizzle', unit:'Bottle', benchmark:0.00 },{ item:'Chocolate Discs', unit:'Bag', benchmark:1.13 },{ item:'Cornmeal', unit:'Bag', benchmark:14.71 },{ item:'Dip Garlic & Herb', unit:'Box', benchmark:12.17 },{ item:'Dip BBQ', unit:'Box', benchmark:3.98 },{ item:'Dip Honey & Mustard', unit:'Box', benchmark:1.13 },{ item:"Dip Frank's Hot Sauce", unit:'Box', benchmark:0.68 },{ item:'Dip Salsa', unit:'Box', benchmark:1.24 },{ item:'Dip Icing', unit:'Box', benchmark:1.59 },{ item:'Dip Garlic & Herb Big 100g', unit:'Box', benchmark:0.68 },{ item:'Dip BBQ Big 100g', unit:'Box', benchmark:0.11 },{ item:"Dip Frank's Hot Sauce Big 100g", unit:'Box', benchmark:0.11 }
+    ].map((x,i)=>({ ...x, id:'prep_'+i, done:false }));
+
+    const doughMappings = [
+      { line:'13.5', prepItem:'13" Dough' },
+      { line:'11.5', prepItem:'11" Dough' },
+      { line:'9.5', prepItem:'9" Dough' },
+      { line:'6', prepItem:'6" Dough' }
+    ];
+
+    const openingTasks = ['Opening HACCP','KPI Sheet Completed','Dating Check - 0.2 full Makeline Tubs','OER Walkthrough/Clean Close Checklist','Enough Clean Aprons?','Game Plan & Dough Plan','Pans Through Oven','Hot Bags brushed and ready for use','Daily Cleaning Tasks - DomFD','New Sticker Roll (Fri/Sat)','Targets Set for Shift - Shift Brief Done','Mid HACCP'];
+
+    function setToday(){ const d=new Date(); document.getElementById('shiftDate').value=d.toISOString().split('T')[0]; }
+    function round2(n){ return Math.round((Number(n)||0)*100)/100; }
+    function roundHalfUp(n){ return Math.ceil((Number(n)||0)*2)/2; }
+    function formatTime(date){ return date.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', hour12:false}); }
+    function parseTimeToDate(timeStr){ const d=new Date(); const [h,m]=(timeStr||'00:00').split(':').map(Number); d.setHours(h||0,m||0,0,0); return d; }
+
+    function renderOpeningDoughTable(){
+      const body=document.querySelector('#openingDoughTable tbody');
+      body.innerHTML='';
+      SIZES.forEach(size=>{
+        const tr=document.createElement('tr');
+        tr.innerHTML=`<td>${size}</td>${AGES.map(age=>`<td><input class="opening-dough-input" inputmode="decimal" type="number" min="0" step="0.1" value="0" data-size="${size}" data-age="${age}" /></td>`).join('')}<td id="total_${size.replace('.','_')}">0</td>`;
+        body.appendChild(tr);
+      });
+      body.querySelectorAll('input').forEach(inp=>{
+        inp.addEventListener('input', ()=>{ updateOpeningTotals(); updateDoughHeaderSummary(); });
+        inp.addEventListener('focus', ()=>{ inp.select(); });
+        inp.addEventListener('touchstart', ()=>{}, { passive: true });
+      });
+      updateOpeningTotals();
+      updateDoughHeaderSummary();
+    }
+
+    function getOpeningBySizeAndAge(){
+      const out={};
+      SIZES.forEach(size=>{ out[size]={}; AGES.forEach(age=>{ const el=document.querySelector(`[data-size="${size}"][data-age="${age}"]`); out[size][age]=Number(el ? el.value : 0); }); });
+      return out;
+    }
+
+    function totalSize(opening,size){ return AGES.reduce((sum,age)=>sum+(opening[size][age]||0),0); }
+
+    function updateOpeningTotals(){
+      const opening=getOpeningBySizeAndAge();
+      SIZES.forEach(size=>{ const total=round2(totalSize(opening,size)); document.getElementById(`total_${size.replace('.','_')}`).textContent=total; });
+    }
+
+    function updateDoughHeaderSummary(){
+      const opening=getOpeningBySizeAndAge();
+      document.getElementById('sum13_5').textContent=round2(totalSize(opening,'13.5'));
+      document.getElementById('sum11_5').textContent=round2(totalSize(opening,'11.5'));
+      document.getElementById('sum9_5').textContent=round2(totalSize(opening,'9.5'));
+      document.getElementById('sum6').textContent=round2(totalSize(opening,'6'));
+    }
+
+    function renderTasks(){
+      const list=document.getElementById('taskList');
+      list.innerHTML='';
+      openingTasks.forEach((task,idx)=>{ const row=document.createElement('label'); row.className='task-row'; row.innerHTML=`<input type="checkbox" data-task-index="${idx}"><span>${task}</span>`; list.appendChild(row); });
+      list.addEventListener('change', updateTaskStyles);
+    }
+
+    function updateTaskStyles(){
+      document.querySelectorAll('.task-row').forEach(row=>{ const cb=row.querySelector('input[type="checkbox"]'); row.classList.toggle('done', cb.checked); });
+    }
+
+    function renderPrepTable(){
+      const body=document.getElementById('prepBody');
+      body.innerHTML='';
+      prepItems.forEach(item=>{
+        const tr=document.createElement('tr');
+        tr.innerHTML=`<td>${item.item}</td><td>${item.unit}</td><td>${round2(item.required||0)}</td><td><input type="checkbox" data-prep-id="${item.id}" ${item.done?'checked':''}></td>`;
+        body.appendChild(tr);
+      });
+      body.querySelectorAll('[data-prep-id]').forEach(cb=>cb.addEventListener('change', e=>{ const found=prepItems.find(x=>x.id===e.target.dataset.prepId); if(found) found.done=e.target.checked; }));
+    }
+
+    function setPrepRequirementsForSales(sales){
+      prepItems.forEach(item=>{ item.required=(item.benchmark/BENCHMARK_SALES)*sales; });
+    }
+
+    function getRequiredDoughRowsForSales(sales){
+      return doughMappings.map(row=>{
+        const prep = prepItems.find(x=>x.item===row.prepItem);
+        const required = prep ? (prep.benchmark/BENCHMARK_SALES)*sales : 0;
+        return { line:row.line, required:round2(required) };
+      });
+    }
+
+    function renderDoughRequirement(requiredRows, opening){
+      const body=document.getElementById('doughSummaryBody');
+      body.innerHTML='';
+      requiredRows.forEach(row=>{
+        const openingTotal=round2(totalSize(opening,row.line));
+        const gap=round2(openingTotal-row.required);
+        const tr=document.createElement('tr');
+        tr.innerHTML=`<td>${row.line}</td><td>${row.required}</td><td>${openingTotal}</td><td>${gap}</td>`;
+        body.appendChild(tr);
+      });
+    }
+
+    function windowStart(windowLabel){
+      const startMap={'10am - 1pm':'10:00','1pm - 3pm':'13:00','3pm - 5pm':'15:00','5pm - 8pm':'17:00','8pm - 10pm':'20:00','10pm - Close':'22:00'};
+      return parseTimeToDate(startMap[windowLabel]||'10:00');
+    }
+
+    function allocateSubperiodDough(requiredRows, opening){
+      const working=JSON.parse(JSON.stringify(opening));
+      return SUBPERIODS.map(sub=>{
+        const sizes={};
+        requiredRows.forEach(row=>{
+          const rawNeed=row.required*sub.ratio;
+          const trays=roundHalfUp(rawNeed);
+          let remaining=trays;
+          const allocations=[];
+          [6,5,4,3,2,1].forEach(age=>{
+            if(remaining<=0) return;
+            const available=working[row.line][age]||0;
+            if(available<=0) return;
+            const used=Math.min(available, remaining);
+            if(used>0){
+              working[row.line][age]=round2(available-used);
+              allocations.push({age, qty:round2(used), window:sub.window});
+              remaining=round2(remaining-used);
+            }
+          });
+          if(remaining>0){ allocations.push({age:1, qty:round2(remaining), shortfall:true, window:sub.window}); }
+          sizes[row.line]={ trays, allocations, rawNeed:round2(rawNeed) };
+        });
+        const totalRaw=round2(SIZES.reduce((sum,size)=>sum+(sizes[size]?.rawNeed||0),0));
+        return { ...sub, sizes, totalRaw, mixTray:(totalRaw>0 && totalRaw<0.5) };
+      });
+    }
+
+    function mergeText(allocations, type){
+      if(!allocations.length) return '-';
+      if(type==='age') return allocations.map(a=>`${a.shortfall?'Need':'D'+a.age} ${a.qty}`).join(' / ');
+      if(type==='timeout') return allocations.map(a=>{ if(a.shortfall) return `Need D${a.age}`; const useAt=windowStart(a.window); const out=new Date(useAt.getTime()-(PROOF_MINUTES[a.age]||0)*60000); return `D${a.age} ${formatTime(out)}`; }).join(' / ');
+      if(type==='ready') return allocations.map(a=>{ const useAt=windowStart(a.window); return `${a.shortfall?'Need':'D'+a.age} ${formatTime(useAt)}`; }).join(' / ');
+      return '-';
+    }
+
+    function renderTakeoutPlan(subAllocations){
+      const groups = {
+        Morning: subAllocations.filter(x=>x.parent==='Morning'),
+        Rush: subAllocations.filter(x=>x.parent==='Rush'),
+        Late: subAllocations.filter(x=>x.parent==='Late')
+      };
+      const periods = [
+        { name:'Morning', window:'Open - 3pm', cls:'morning', subs:groups.Morning },
+        { name:'Rush', window:'3pm - 8pm', cls:'rush', subs:groups.Rush },
+        { name:'Late', window:'8pm - Close', cls:'late', subs:groups.Late }
+      ];
+      const sizeOrder=['6','9.5','11.5','13.5'];
+      const body=document.getElementById('doughPlanBody');
+      body.innerHTML='';
+
+      periods.forEach(period=>{
+        const merged={};
+        sizeOrder.forEach(size=>{
+          merged[size]={
+            trays: round2(period.subs.reduce((sum,s)=>sum+(s.sizes[size]?.trays||0),0)),
+            allocations: period.subs.flatMap(s=>s.sizes[size]?.allocations||[])
+          };
+        });
+        const totalRaw=round2(period.subs.reduce((sum,s)=>sum+s.totalRaw,0));
+        const mixTray=(totalRaw>0 && totalRaw<0.5);
+        const rows=[
+          { label:'trays', valueFn:s=>merged[s].trays },
+          { label:'age', valueFn:s=>mergeText(merged[s].allocations,'age') },
+          { label:'time out', valueFn:s=>mergeText(merged[s].allocations,'timeout') },
+          { label:'ready at', valueFn:s=>mergeText(merged[s].allocations,'ready') }
+        ];
+        const rowspan=4 + (mixTray ? 1 : 0);
+        rows.forEach((r, idx)=>{
+          const tr=document.createElement('tr');
+          tr.className=period.cls;
+          let html='';
+          if(idx===0) html += `<td rowspan="${rowspan}">${period.name}</td><td rowspan="${rowspan}">${period.window}</td>`;
+          html += `<td>${r.label}</td>${sizeOrder.map(s=>`<td>${r.valueFn(s)}</td>`).join('')}`;
+          tr.innerHTML=html;
+          body.appendChild(tr);
+        });
+        if(mixTray){
+          const tr=document.createElement('tr');
+          tr.className=period.cls;
+          tr.innerHTML=`<td>note</td><td colspan="4" class="mix">Mix Tray required for this period</td>`;
+          body.appendChild(tr);
+        }
+      });
+    }
+
+    function updateStatus(requiredRows, opening){
+      const required=round2(requiredRows.reduce((a,b)=>a+b.required,0));
+      const openingTotal=round2(SIZES.reduce((sum,size)=>sum+totalSize(opening,size),0));
+      const gap=round2(openingTotal-required);
+      const statusPill=document.getElementById('statusPill');
+      if(gap>=0) statusPill.innerHTML=`<span class="pill good">Opening dough covers today's required dough (${gap} surplus)</span>`;
+      else if(gap>-10) statusPill.innerHTML=`<span class="pill warn">Dough position is tight (${gap})</span>`;
+      else statusPill.innerHTML=`<span class="pill bad">Dough shortfall identified (${gap})</span>`;
+    }
+
+    function buildAll(){
+      const salesToday=Number(document.getElementById('forecastSales').value||0);
+      const opening=getOpeningBySizeAndAge();
+      updateOpeningTotals();
+      updateDoughHeaderSummary();
+      setPrepRequirementsForSales(salesToday);
+      renderPrepTable();
+      const requiredRows=getRequiredDoughRowsForSales(salesToday);
+      renderDoughRequirement(requiredRows, opening);
+      const subAllocations=allocateSubperiodDough(requiredRows, opening);
+      renderTakeoutPlan(subAllocations);
+      updateStatus(requiredRows, opening);
+    }
+
+    function collectAllData(){
+      const openingInputs={};
+      SIZES.forEach(size=>{ openingInputs[size]={}; AGES.forEach(age=>{ openingInputs[size][age]=document.querySelector(`[data-size="${size}"][data-age="${age}"]`).value; }); });
+      return {
+        store:document.getElementById('store').value,
+        shiftDate:document.getElementById('shiftDate').value,
+        openTime:document.getElementById('openTime').value,
+        rushStart:document.getElementById('rushStart').value,
+        lateStart:document.getElementById('lateStart').value,
+        closeTime:document.getElementById('closeTime').value,
+        forecastSales:document.getElementById('forecastSales').value,
+        forecastSalesDay2:document.getElementById('forecastSalesDay2').value,
+        forecastSalesDay3:document.getElementById('forecastSalesDay3').value,
+        openingInputs,
+        notes:document.getElementById('managerNotes').value,
+        prepItems:prepItems.map(x=>({id:x.id, done:x.done})),
+        tasks:Array.from(document.querySelectorAll('[data-task-index]')).map(x=>x.checked)
+      };
+    }
+
+    function applySavedData(data){
+      if(!data) return;
+      ['store','shiftDate','openTime','rushStart','lateStart','closeTime','forecastSales','forecastSalesDay2','forecastSalesDay3'].forEach(id=>{ if(data[id]!==undefined) document.getElementById(id).value=data[id]; });
+      if(data.openingInputs){ SIZES.forEach(size=>{ AGES.forEach(age=>{ const el=document.querySelector(`[data-size="${size}"][data-age="${age}"]`); if(el && data.openingInputs[size] && data.openingInputs[size][age]!==undefined) el.value=data.openingInputs[size][age]; }); }); }
+      if(data.prepItems){ data.prepItems.forEach(saved=>{ const found=prepItems.find(x=>x.id===saved.id); if(found) found.done=!!saved.done; }); }
+      renderTasks();
+      if(data.tasks){ document.querySelectorAll('[data-task-index]').forEach((cb,idx)=>cb.checked=!!data.tasks[idx]); updateTaskStyles(); }
+      document.getElementById('managerNotes').value=data.notes||'';
+      buildAll();
+    }
+
+    function buildPrintHtml(){
+      const printSections = [
+        document.getElementById('printDoughSummarySection').outerHTML,
+        document.getElementById('printDoughNeededSection').outerHTML,
+        document.getElementById('printDoughPlanSection').outerHTML,
+        `<div class="print-row">${document.getElementById('printPrepSection').outerHTML}${document.getElementById('printChecklistSection').outerHTML}</div>`
+      ].join('');
+
+      return `
+        <html>
+        <head>
+          <title>Dough Planner Print</title>
+          <style>
+            @page { size: A4 portrait; margin: 10mm; }
+            * { box-sizing: border-box; }
+            body { font-family: Arial, Helvetica, sans-serif; color: #17324d; margin: 0; font-size: 11px; }
+            .card { border: 1px solid #d7e1ea; border-radius: 12px; padding: 10px; margin-bottom: 10px; page-break-inside: avoid; break-inside: avoid; }
+            .print-row { display: block; }
+            .section-chip { display: inline-block; padding: 4px 8px; border-radius: 999px; font-size: 10px; font-weight: 700; background: #eef5fb; color: #006491; margin-bottom: 6px; }
+            h2 { margin: 0 0 8px 0; font-size: 16px; color: #006491; }
+            .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 8px; }
+            .summary-box { border: 1px solid #d7e1ea; border-radius: 10px; padding: 8px; background: #fbfdff; }
+            .summary-box .big { font-size: 20px; font-weight: 800; margin-top: 4px; color: #006491; }
+            .small, .mini { font-size: 10px; color: #5e7388; }
+            .note { background: #eef7ff; border-left: 4px solid #006491; padding: 8px; border-radius: 8px; font-size: 10px; color: #17324d; margin-bottom: 8px; }
+            .table-wrap, .print-full { overflow: visible !important; max-height: none !important; border: none !important; }
+            table { width: 100%; border-collapse: collapse; font-size: 10px; }
+            th, td { padding: 4px 5px; border: 1px solid #d7e1ea; text-align: center; vertical-align: middle; }
+            th { background: #eef5fb; color: #006491; }
+            td:first-child, th:first-child { text-align: left; }
+            .task-list { display: grid; gap: 5px; }
+            .task-row { display: grid; grid-template-columns: 16px 1fr; gap: 6px; align-items: center; padding: 5px 6px; border: 1px solid #d7e1ea; border-radius: 8px; }
+            .task-row input { transform: scale(.9); }
+            .morning { background: #d9eef4; }
+            .rush { background: #f4dddd; }
+            .late { background: #e7def4; }
+            .mix { color: #e31837; font-weight: 700; }
+          </style>
+        </head>
+        <body>${printSections}</body>
+        </html>
+      `;
+    }
+
+    document.getElementById('buildAll').addEventListener('click', buildAll);
+    document.getElementById('printPlan').addEventListener('click', ()=>{
+      const w = window.open('', 'PRINT', 'height=900,width=1100');
+      w.document.write(buildPrintHtml());
+      w.document.close();
+      w.focus();
+      w.print();
+      w.close();
+    });
+    document.getElementById('saveLocal').addEventListener('click', ()=>{ localStorage.setItem('doughPrepPlanner', JSON.stringify(collectAllData())); alert('Plan saved on this device.'); });
+    document.getElementById('loadLocal').addEventListener('click', ()=>{ const saved=localStorage.getItem('doughPrepPlanner'); if(!saved){ alert('No saved plan found on this device.'); return; } applySavedData(JSON.parse(saved)); });
+
+    setToday();
+    renderOpeningDoughTable();
+    renderTasks();
+    buildAll();
+  </script>
+</body>
+</html>
