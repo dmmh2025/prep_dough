@@ -276,7 +276,7 @@
       <div class="card print-section" id="printDoughPlanSection">
         <span class="section-chip">Automatic Takeout Plan</span>
         <h2>Period Dough Plan</h2>
-        <div class="note">The plan shows Morning, Rush and Late only. It still uses the KPI sales split underneath, rounds trays to the nearest 0.5, and flags very small periods as mix tray periods.</div>
+        <div class="note">The plan is split into Lunch, Afternoon, Early Rush, Dinner Rush, Post Rush and Late Night. Dough below 1 tray rounds up to 1 decimal place. Dough of 1 tray or more rounds to a whole tray using your store rule.</div>
         <div class="table-wrap print-full" style="margin-top:12px;">
           <table>
             <thead>
@@ -487,49 +487,39 @@
     }
 
     function renderTakeoutPlan(subAllocations){
-      const groups = {
-        Morning: subAllocations.filter(x=>x.parent==='Morning'),
-        Rush: subAllocations.filter(x=>x.parent==='Rush'),
-        Late: subAllocations.filter(x=>x.parent==='Late')
-      };
-      const periods = [
-        { name:'Morning', window:'Open - 3pm', cls:'morning', subs:groups.Morning },
-        { name:'Rush', window:'3pm - 8pm', cls:'rush', subs:groups.Rush },
-        { name:'Late', window:'8pm - Close', cls:'late', subs:groups.Late }
-      ];
       const sizeOrder=['6','9.5','11.5','13.5'];
       const body=document.getElementById('doughPlanBody');
       body.innerHTML='';
 
-      periods.forEach(period=>{
-        const merged={};
-        sizeOrder.forEach(size=>{
-          merged[size]={
-            trays: round2(period.subs.reduce((sum,s)=>sum+(s.sizes[size]?.trays||0),0)),
-            allocations: period.subs.flatMap(s=>s.sizes[size]?.allocations||[])
-          };
-        });
-        const totalRaw=round2(period.subs.reduce((sum,s)=>sum+s.totalRaw,0));
-        const mixTray=(totalRaw>0 && totalRaw<0.5);
+      subAllocations.forEach(period=>{
         const rows=[
-          { label:'trays', valueFn:s=>merged[s].trays },
-          { label:'age', valueFn:s=>mergeText(merged[s].allocations,'age') },
-          { label:'time out', valueFn:s=>mergeText(merged[s].allocations,'timeout') },
-          { label:'ready at', valueFn:s=>mergeText(merged[s].allocations,'ready') }
+          { label:'trays', valueFn:s=>period.sizes[s]?.trays || 0 },
+          { label:'age', valueFn:s=>mergeText(period.sizes[s]?.allocations || [], 'age') },
+          { label:'time out', valueFn:s=>mergeText(period.sizes[s]?.allocations || [], 'timeout') },
+          { label:'ready at', valueFn:s=>mergeText(period.sizes[s]?.allocations || [], 'ready') }
         ];
-        const rowspan=4 + (mixTray ? 1 : 0);
+
+        const rowClass = period.parent === 'Morning' ? 'morning' : period.parent === 'Rush' ? 'rush' : 'late';
+        const mixTray = period.mixTray;
+        const rowspan = 4 + (mixTray ? 1 : 0);
+
         rows.forEach((r, idx)=>{
           const tr=document.createElement('tr');
-          tr.className=period.cls;
+          tr.className=rowClass;
+
           let html='';
-          if(idx===0) html += `<td rowspan="${rowspan}">${period.name}</td><td rowspan="${rowspan}">${period.window}</td>`;
+          if(idx===0){
+            html += `<td rowspan="${rowspan}">${period.title}</td><td rowspan="${rowspan}">${period.window}</td>`;
+          }
+
           html += `<td>${r.label}</td>${sizeOrder.map(s=>`<td>${r.valueFn(s)}</td>`).join('')}`;
           tr.innerHTML=html;
           body.appendChild(tr);
         });
+
         if(mixTray){
           const tr=document.createElement('tr');
-          tr.className=period.cls;
+          tr.className=rowClass;
           tr.innerHTML=`<td>note</td><td colspan="4" class="mix">Mix Tray required for this period</td>`;
           body.appendChild(tr);
         }
