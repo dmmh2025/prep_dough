@@ -123,7 +123,18 @@
     .warn { background: var(--warn); }
     .bad { background: var(--bad); }
     .task-list { display: grid; gap: 8px; }
-    .task-row { display: grid; grid-template-columns: 24px 1fr; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: #fbfdff; }
+    .task-row {
+      display: grid;
+      grid-template-columns: 24px 1fr;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fbfdff;
+    }
+    #pulseMixList { display: grid; gap: 8px; }
+    #pulseMixList input[type="number"] { min-height: 40px; }
     .task-row.done { background: var(--good); }
     .section-chip { display: inline-block; padding: 6px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: var(--soft); color: var(--blue); margin-bottom: 10px; }
     .morning { background: var(--morning); }
@@ -312,6 +323,12 @@
         <div class="card print-section" id="printChecklistSection">
           <h2>Opening Manager Checklist</h2>
           <div class="task-list" id="taskList"></div>
+
+          <h2 style="margin-top:18px;">PRP Checks</h2>
+          <div class="task-list" id="prpTaskList"></div>
+
+          <h2 style="margin-top:18px;">Pulse Product Mix Checks</h2>
+          <div id="pulseMixList"></div>
         </div>
       </div>
 
@@ -365,24 +382,29 @@
       'Daily Cleaning Tasks - DomFD',
       'New Sticker Roll (Fri/Sat)',
       'Targets Set for Shift - Shift Brief Done',
-      'Mid HACCP',
-      'PRP Check - Gluten Free Kit (Bases, Clean Screens, Sauce Tubes, Bag cutter)',
-      'PRP Check - Silicon Paper (full and 1/2 sheets) & CND',
-      'PRP Check - Nacho Pans with Silicon',
-      'PRP Check - Pizza/BBQ Sauce for Nachos/Wraps',
-      'PRP Check - Whirl Butter/Cinnamon Sugar',
-      'PRP Check - Coke Fridge Full',
-      'PRP Check - Dip Cases at Hot Rack - All open and ready',
-      'PRP Check - Boxes built and ready',
-      'Pulse Product Mix - Use SDLW Product Mix Report to pull required volumes',
-      'Pulse Product Mix - Wraps prepped (80% of last week figure at ambient)',
-      'Pulse Product Mix - Fries (all varieties) 250g prepped into food grade bags',
-      'Pulse Product Mix - BBQ Wings prepped into food grade bags',
-      'Pulse Product Mix - GPBs prepped (2 hour shelf life)',
-      'Pulse Product Mix - Cheese Twisted Dough Balls prepped (2 hour shelf life)',
-      'Pulse Product Mix - Pepperoni Twisted Dough Balls prepped (2 hour shelf life)',
-      'Pulse Product Mix - Ham Twisted Dough Balls prepped (2 hour shelf life)',
-      'Pulse Product Mix - Chocolate Cinnamon Twisted Dough Balls prepped (2 hour shelf life)'
+      'Mid HACCP'
+    ];
+
+    const prpChecks = [
+      'Gluten Free Kit (Bases, Clean Screens, Sauce Tubes, Bag cutter)',
+      'Silicon Paper (full and 1/2 sheets) & CND',
+      'Nacho Pans with Silicon',
+      'Pizza/BBQ Sauce for Nachos/Wraps',
+      'Whirl Butter/Cinnamon Sugar',
+      'Coke Fridge Full',
+      'Dip Cases at Hot Rack - All open and ready',
+      'Boxes built and ready'
+    ];
+
+    const pulseMixChecks = [
+      { name: 'Wraps - TOTAL SOLD', note: 'prep 80% of LW figure at Ambient' },
+      { name: 'Fries (All varieties) - 250g', note: 'prep into food grade bags' },
+      { name: 'BBQ Wings', note: 'prep into food grade bags' },
+      { name: 'GPBs prepped', note: '2 hour shelf life' },
+      { name: 'Cheese Twisted Dough Balls', note: '2 hour shelf life' },
+      { name: 'Pepperoni Twisted Dough Balls', note: '2 hour shelf life' },
+      { name: 'Ham Twisted Dough Balls', note: '2 hour shelf life' },
+      { name: 'Chocolate Cinnamon Twisted Dough Balls', note: '2 hour shelf life' }
     ];
 
     function setToday(){ const d=new Date(); document.getElementById('shiftDate').value=d.toISOString().split('T')[0]; }
@@ -432,12 +454,40 @@
     function renderTasks(){
       const list=document.getElementById('taskList');
       list.innerHTML='';
-      openingTasks.forEach((task,idx)=>{ const row=document.createElement('label'); row.className='task-row'; row.innerHTML=`<input type="checkbox" data-task-index="${idx}"><span>${task}</span>`; list.appendChild(row); });
-      list.addEventListener('change', updateTaskStyles);
+      openingTasks.forEach((task,idx)=>{
+        const row=document.createElement('label');
+        row.className='task-row';
+        row.innerHTML=`<input type="checkbox" data-task-index="${idx}"><span>${task}</span>`;
+        list.appendChild(row);
+      });
+
+      const prpList=document.getElementById('prpTaskList');
+      prpList.innerHTML='';
+      prpChecks.forEach((task,idx)=>{
+        const row=document.createElement('label');
+        row.className='task-row';
+        row.innerHTML=`<input type="checkbox" data-prp-index="${idx}"><span>${task}</span>`;
+        prpList.appendChild(row);
+      });
+
+      const pulseList=document.getElementById('pulseMixList');
+      pulseList.innerHTML='';
+      pulseMixChecks.forEach((item,idx)=>{
+        const row=document.createElement('div');
+        row.className='task-row';
+        row.style.gridTemplateColumns = '1fr 110px';
+        row.innerHTML=`<span><strong>${item.name}</strong><br><span class="mini">${item.note}</span></span><input type="number" min="0" step="1" inputmode="numeric" data-pulse-index="${idx}" placeholder="Qty" />`;
+        pulseList.appendChild(row);
+      });
+
+      document.getElementById('printChecklistSection').addEventListener('change', updateTaskStyles);
     }
 
     function updateTaskStyles(){
-      document.querySelectorAll('.task-row').forEach(row=>{ const cb=row.querySelector('input[type="checkbox"]'); row.classList.toggle('done', cb.checked); });
+      document.querySelectorAll('.task-row').forEach(row=>{
+        const cb=row.querySelector('input[type="checkbox"]');
+        if(cb) row.classList.toggle('done', cb.checked);
+      });
     }
 
     function renderPrepTable(){
@@ -596,7 +646,9 @@
         openingInputs,
         notes:document.getElementById('managerNotes').value,
         prepItems:prepItems.map(x=>({id:x.id, done:x.done})),
-        tasks:Array.from(document.querySelectorAll('[data-task-index]')).map(x=>x.checked)
+        tasks:Array.from(document.querySelectorAll('[data-task-index]')).map(x=>x.checked),
+        prpTasks:Array.from(document.querySelectorAll('[data-prp-index]')).map(x=>x.checked),
+        pulseMix:Array.from(document.querySelectorAll('[data-pulse-index]')).map(x=>x.value)
       };
     }
 
@@ -606,7 +658,10 @@
       if(data.openingInputs){ SIZES.forEach(size=>{ AGES.forEach(age=>{ const el=document.querySelector(`[data-size="${size}"][data-age="${age}"]`); if(el && data.openingInputs[size] && data.openingInputs[size][age]!==undefined) el.value=data.openingInputs[size][age]; }); }); }
       if(data.prepItems){ data.prepItems.forEach(saved=>{ const found=prepItems.find(x=>x.id===saved.id); if(found) found.done=!!saved.done; }); }
       renderTasks();
-      if(data.tasks){ document.querySelectorAll('[data-task-index]').forEach((cb,idx)=>cb.checked=!!data.tasks[idx]); updateTaskStyles(); }
+      if(data.tasks){ document.querySelectorAll('[data-task-index]').forEach((cb,idx)=>cb.checked=!!data.tasks[idx]); }
+      if(data.prpTasks){ document.querySelectorAll('[data-prp-index]').forEach((cb,idx)=>cb.checked=!!data.prpTasks[idx]); }
+      if(data.pulseMix){ document.querySelectorAll('[data-pulse-index]').forEach((inp,idx)=>inp.value=data.pulseMix[idx] ?? ''); }
+      updateTaskStyles();
       document.getElementById('managerNotes').value=data.notes||'';
       buildAll();
     }
