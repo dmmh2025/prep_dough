@@ -324,12 +324,15 @@
           <h2>Opening Manager Checklist</h2>
           <div class="task-list" id="taskList"></div>
 
-          <h2 style="margin-top:18px;">PRP Checks</h2>
-          <div class="task-list" id="prpTaskList"></div>
-
           <h2 style="margin-top:18px;">Pulse Product Mix Checks</h2>
           <div id="pulseMixList"></div>
         </div>
+      </div>
+
+      <div class="card print-section" id="printPrpSection">
+        <span class="section-chip">PRP Checks</span>
+        <h2>PRP Checks</h2>
+        <div class="task-list" id="prpTaskList"></div>
       </div>
 
       <div class="bottom-grid">
@@ -350,6 +353,7 @@
     const SIZES = ['13.5','11.5','9.5','6'];
     const PROOF_MINUTES = {1:300,2:240,3:120,4:30,5:15,6:10};
     const SALES_SPLIT = { morning:0.10, rush:0.70, late:0.20, lunch:0.06, afternoon:0.04, earlyRush:0.21, dinnerRush:0.49, postRush:0.13, lateNight:0.07 };
+
     const SUBPERIODS = [
       { key:'lunch', title:'Lunch', window:'10am - 1pm', ratio:SALES_SPLIT.lunch, parent:'Morning' },
       { key:'afternoon', title:'Afternoon', window:'1pm - 3pm', ratio:SALES_SPLIT.afternoon, parent:'Morning' },
@@ -480,7 +484,7 @@
         pulseList.appendChild(row);
       });
 
-      document.getElementById('printChecklistSection').addEventListener('change', updateTaskStyles);
+      document.body.addEventListener('change', updateTaskStyles);
     }
 
     function updateTaskStyles(){
@@ -630,48 +634,13 @@
       updateStatus(requiredRows, opening);
     }
 
-    function collectAllData(){
-      const openingInputs={};
-      SIZES.forEach(size=>{ openingInputs[size]={}; AGES.forEach(age=>{ openingInputs[size][age]=document.querySelector(`[data-size="${size}"][data-age="${age}"]`).value; }); });
-      return {
-        store:document.getElementById('store').value,
-        shiftDate:document.getElementById('shiftDate').value,
-        openTime:document.getElementById('openTime').value,
-        rushStart:document.getElementById('rushStart').value,
-        lateStart:document.getElementById('lateStart').value,
-        closeTime:document.getElementById('closeTime').value,
-        forecastSales:document.getElementById('forecastSales').value,
-        forecastSalesDay2:document.getElementById('forecastSalesDay2').value,
-        forecastSalesDay3:document.getElementById('forecastSalesDay3').value,
-        openingInputs,
-        notes:document.getElementById('managerNotes').value,
-        prepItems:prepItems.map(x=>({id:x.id, done:x.done})),
-        tasks:Array.from(document.querySelectorAll('[data-task-index]')).map(x=>x.checked),
-        prpTasks:Array.from(document.querySelectorAll('[data-prp-index]')).map(x=>x.checked),
-        pulseMix:Array.from(document.querySelectorAll('[data-pulse-index]')).map(x=>x.value)
-      };
-    }
-
-    function applySavedData(data){
-      if(!data) return;
-      ['store','shiftDate','openTime','rushStart','lateStart','closeTime','forecastSales','forecastSalesDay2','forecastSalesDay3'].forEach(id=>{ if(data[id]!==undefined) document.getElementById(id).value=data[id]; });
-      if(data.openingInputs){ SIZES.forEach(size=>{ AGES.forEach(age=>{ const el=document.querySelector(`[data-size="${size}"][data-age="${age}"]`); if(el && data.openingInputs[size] && data.openingInputs[size][age]!==undefined) el.value=data.openingInputs[size][age]; }); }); }
-      if(data.prepItems){ data.prepItems.forEach(saved=>{ const found=prepItems.find(x=>x.id===saved.id); if(found) found.done=!!saved.done; }); }
-      renderTasks();
-      if(data.tasks){ document.querySelectorAll('[data-task-index]').forEach((cb,idx)=>cb.checked=!!data.tasks[idx]); }
-      if(data.prpTasks){ document.querySelectorAll('[data-prp-index]').forEach((cb,idx)=>cb.checked=!!data.prpTasks[idx]); }
-      if(data.pulseMix){ document.querySelectorAll('[data-pulse-index]').forEach((inp,idx)=>inp.value=data.pulseMix[idx] ?? ''); }
-      updateTaskStyles();
-      document.getElementById('managerNotes').value=data.notes||'';
-      buildAll();
-    }
-
     function buildPrintHtml(){
       const printSections = [
         document.getElementById('printDoughSummarySection').outerHTML,
         document.getElementById('printDoughNeededSection').outerHTML,
         document.getElementById('printDoughPlanSection').outerHTML,
-        `<div class="print-row">${document.getElementById('printPrepSection').outerHTML}${document.getElementById('printChecklistSection').outerHTML}</div>`
+        `<div class="print-row">${document.getElementById('printPrepSection').outerHTML}${document.getElementById('printChecklistSection').outerHTML}</div>`,
+        document.getElementById('printPrpSection').outerHTML
       ].join('');
 
       return `
